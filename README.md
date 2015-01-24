@@ -9,6 +9,12 @@ Ans: "over 100 major file formats"
 1m4g33nc0d3r is built on ImageMagick. For a full list check http://www.imagemagick.org/script/formats.php
 
 
+### Running
+
+Works wel with BMP, PNG and PDFs. Highly compressed JPG dont seem to work due to lossy compression.
+
+####TODO optimization for encoding data in JPG search and replace all colors
+
 
 ### Example
 
