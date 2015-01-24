@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <sstream>
 #include <fstream>
+#include <stdexcept>
 #include <string>
 #include <cstring>
 #include <assert.h>
@@ -152,7 +153,7 @@ unsigned char *pixelCacheToBytes(Magick::PixelPacket *pixels, size_t width, size
     cout << "Pow Diff: " << pow_diff << endl;
 #endif
 
-    unsigned char *data = (unsigned char *)malloc(width*height);
+    unsigned char *data = new unsigned char [width*height];
     memset(data, 0, width*height);
     size_t it = 0;
 
@@ -174,24 +175,27 @@ unsigned char *pixelCacheToBytes(Magick::PixelPacket *pixels, size_t width, size
     return data;
 }
 
-string uncoverImageData(Magick::PixelPacket *pixels, uint32_t width, uint32_t height, size_t imgColDepth)
+unsigned char *uncoverImageData(Magick::PixelPacket *pixels, uint32_t width, uint32_t height, size_t imgColDepth, size_t &len)
 {
     unsigned char *data = pixelCacheToBytes(pixels, width, height, imgColDepth);
 #ifdef DEBUG
     cout << "First 4 bytes of data: " << hexPrint(data, 4) << endl;
 #endif
 
-    uint32_t len;
     //get len
-    memcpy(&len, &data[0], 4);
+    size_t data_len = 0;
+    memcpy(&data_len, &data[0], 4);
 
+    len = data_len - 4;
     cout << "Encoded data size: " << len << endl;
-    assert(len < width * height);
+    assert(data_len < width * height);
 
     //-4 for size of int32_t + 1 for null pointer added on by snprintf
-    char buff[len - 4 + 1];
-    snprintf(buff, len - 4 + 1, "%s", &data[4]);
-    return string(buff);
+    unsigned char *buff = new unsigned char[len];
+    // snprintf(buff, len - 4 + 1, "%s", &data[4]);
+    memcpy(buff, &data[4], len);
+    free(data);
+    return buff;
 }
 
 inline string hexPrint(const char *data, const size_t len)
@@ -239,12 +243,33 @@ unsigned char *fileToChar(string filename, size_t &len)
     fstream file;
     stringstream ss;
     file.open(filename ,ios::in | ios::binary);
-    ss << file.rdbuf();
+    if(file.is_open())
+        ss << file.rdbuf();
+    else{
+        throw new runtime_error("Error opening: " + filename);
+        file.close();
+    }
+    file.close();
     len = ss.str().size();
     unsigned char *buff = new unsigned char [len];
     memcpy(buff, ss.str().c_str(), len);
-    file.close();
     return buff;
+}
+
+//Copy unsigned char bufferr into file
+void charToFile(const unsigned char *buff, size_t &len, string filename)
+{
+    fstream file;
+    file.open(filename ,ios::out | ios::binary | ios::trunc);
+    std::filebuf *fBuf = file.rdbuf();
+    if(file.is_open())
+        fBuf->sputn(reinterpret_cast<const char *>(buff), len);
+    else{
+        throw new runtime_error("Error opening: " + filename);
+        file.close();
+    }
+    file.close();
+    return;
 }
 
 int main(int argc, char *argv[])
@@ -294,10 +319,6 @@ int main(int argc, char *argv[])
                 exit(EXIT_FAILURE);
             }
 
-            //copy data into binary data_buff
-            // unsigned char data_buff[data.size()];
-            // memcpy(data_buff, data.c_str(), data.size());
-
             #ifdef DEBUG
             dumpPixels(pixels, width, height, buff_len + 4);
             #endif
@@ -314,8 +335,10 @@ int main(int argc, char *argv[])
             #ifdef DEBUG
             dumpPixels(pixels, width, height, buff_len + 4);
             #endif
-            string decodedData = uncoverImageData(pixels, width, height, depth);
-            cout << "Recovered data: " << decodedData << endl;
+            size_t data_len = 0;
+            unsigned char *data = uncoverImageData(pixels, width, height, depth, data_len);
+            cout << "Recoverd file of " << data_len << "B, saving to `" << argv[3] << "`" << endl;
+            charToFile(data, data_len, argv[3]);
             break;
             }
         default:
