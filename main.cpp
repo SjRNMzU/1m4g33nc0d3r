@@ -246,7 +246,7 @@ unsigned char *fileToChar(string filename, size_t &len)
     if(file.is_open())
         ss << file.rdbuf();
     else{
-        throw new runtime_error("Error opening: " + filename);
+        throw runtime_error("Error opening: " + filename);
         file.close();
     }
     file.close();
@@ -265,7 +265,7 @@ void charToFile(const unsigned char *buff, size_t &len, string filename)
     if(file.is_open())
         fBuf->sputn(reinterpret_cast<const char *>(buff), len);
     else{
-        throw new runtime_error("Error opening: " + filename);
+        throw runtime_error("Error opening: " + filename);
         file.close();
     }
     file.close();
