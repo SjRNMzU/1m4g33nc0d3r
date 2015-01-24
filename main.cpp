@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <stdlib.h>
 #include <sstream>
+#include <fstream>
 #include <string>
 #include <cstring>
 #include <assert.h>
@@ -232,10 +233,25 @@ void deincise(char *surface, size_t surface_len, char *ink, size_t ink_len)
 } 
 #endif
 
+//Copy file into buffer of unsigned chars
+unsigned char *fileToChar(string filename, size_t &len)
+{
+    fstream file;
+    stringstream ss;
+    file.open(filename ,ios::in | ios::binary);
+    ss << file.rdbuf();
+    len = ss.str().size();
+    unsigned char *buff = new unsigned char [len];
+    memcpy(buff, ss.str().c_str(), len);
+    file.close();
+    return buff;
+}
+
 int main(int argc, char *argv[])
 {
-    if(argc < 3){
-        cerr << "Useage: 1m4g33nc0d3r -i image.ext e/d -o output" << endl;
+    if(argc < 4){
+        cerr << "Useage: 1m4g33nc0d3r image.ext e/d embed.file output" << endl;
+        // cerr << "Useage: 1m4g33nc0d3r -i image.ext e/d -o output" << endl;
         exit(EXIT_FAILURE);
     }
 
@@ -263,42 +279,40 @@ int main(int argc, char *argv[])
     char op = *argv[2];
     switch(op){
         case 'e':{
-            //Print out data encoding
-            string data("Hello World!");
-            for(int i=0; i < 13; ++i){
-                data += data;
-            }
+            size_t buff_len = 0;
+            unsigned char *buff = fileToChar(argv[3], buff_len);
+
             cout << "Image file size: " << img->fileSize() << "B" << endl;
-            cout << "Data Size: " << data.size() << "B" << endl;
-            cout << "Compression ratio: " << static_cast<float>(data.size())/static_cast<float>(img->fileSize()) << endl;
+            cout << "Data Size: " << buff_len << "B" << endl;
+            cout << "Compression ratio: " << static_cast<float>(buff_len)/static_cast<float>(img->fileSize()) << endl;
 
             // cout << "Data: " << data << endl;
             // cout << "hex(Data): " << hexPrint(data.c_str(), data.size()) << endl;
 
-            if((data.size() + 1) > (width*height) ){
+            if((buff_len + 1) > (width*height) ){
                 cerr << "Error not enough space to encode data in image" << endl;
                 exit(EXIT_FAILURE);
             }
 
             //copy data into binary data_buff
-            unsigned char data_buff[data.size()];
-            memcpy(data_buff, data.c_str(), data.size());
+            // unsigned char data_buff[data.size()];
+            // memcpy(data_buff, data.c_str(), data.size());
 
             #ifdef DEBUG
-            dumpPixels(pixels, width, height, data.size() + 4);
+            dumpPixels(pixels, width, height, buff_len + 4);
             #endif
-            embedImageData(pixels, width, height, data_buff, data.size(), depth);
+            embedImageData(pixels, width, height, buff, buff_len, depth);
             img->syncPixels();
-            cout << "Saving to: " << argv[3] << endl;
-            img->write(argv[3]);
+            cout << "Saving to: " << argv[4] << endl;
+            img->write(argv[4]);
             #ifdef DEBUG
-            dumpPixels(pixels, width, height, data.size() + 4);
+            dumpPixels(pixels, width, height, buff_len + 4);
             #endif
             break;
             }
         case 'd':{
             #ifdef DEBUG
-            dumpPixels(pixels, width, height, data.size() + 4);
+            dumpPixels(pixels, width, height, buff_len + 4);
             #endif
             string decodedData = uncoverImageData(pixels, width, height, depth);
             cout << "Recovered data: " << decodedData << endl;
