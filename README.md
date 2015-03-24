@@ -10,14 +10,16 @@ Ans: "over 100 major file formats"
 
 Works wel with BMP, PNG and PDFs. Highly compressed JPG dont seem to work due to lossy compression.
 
-####TODO 
--optimization for encoding data in JPG search and replace all colors
--confirm data can be recovered on encoding
+####TODO
+
+* optimization for encoding data in JPG search and replace all colors
+* confirm data can be recovered on encoding
 
 ### Example
 
-'''
-`$ ./1m4g33nc0d3r input.bmp e SAMPLE_FILE.txt output.bmp`
+
+```
+$ ./1m4g33nc0d3r input.bmp e SAMPLE_FILE.txt output.bmp
 
 >>>>    1m4g33nc0d3r    <<<<
 
@@ -29,7 +31,10 @@ Image file size: 518538B
 Data Size: 11297B
 Compression ratio: 0.0217863
 Saving to: output.bmp
-`$ ./1m4g33nc0d3r output.bmp d OUTPUT_FILE.txt`
+```
+
+```
+$ ./1m4g33nc0d3r output.bmp d OUTPUT_FILE.txt
 
 >>>>    1m4g33nc0d3r    <<<<
 
